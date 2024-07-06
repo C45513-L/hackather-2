@@ -1,0 +1,8 @@
+streamlit
+plotly
+geopandas
+shapely
+geopy
+pytesseract
+opencv-python-headless
+PyMuPDF
