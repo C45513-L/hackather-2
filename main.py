@@ -28,12 +28,21 @@ from pdf2image.exceptions import (
 )
 
 import tempfile
-import os
+# import os
+# from transformers import GenerationConfig
+# from transformers import AutoTokenizer, AutoModelForSequenceClassification
+# from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+
 
 pytesseract.pytesseract.tesseract_cmd = '/opt/homebrew/bin/tesseract'  # Adjust the path to your Tesseract installation
 st.set_page_config(layout="wide")
 
-
+# Load Hugging Face GPT model and tokenizer
+model_name = "facebook/opt-1.3b"  # or use a different model like "distilgpt2"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
 
 #----------------------------------------------------------------------------------------------------------------
 # FUNCTION
@@ -93,6 +102,39 @@ def extract_text_from_image(image_file):
     return text
 
 
+# def extract_entities(text):
+#     model_name = "bert-base-uncased"
+#     tokenizer = AutoTokenizer.from_pretrained(model_name)
+#     model = AutoModelForSequenceClassification.from_pretrained(model_name)
+#     input_text=text+" Act as an expert in building, real estate, construction industry, what is the type of this document"
+#     encoded_text = tokenizer(input_text, truncation=True, padding=True,return_tensors="pt")
+#     predictions = model(encoded_text)
+#     predicted_label = predictions[0][0]
+    
+#     return predicted_label
+
+def analyze_document(text):
+    prompt = (
+        "You are an expert in the building, real estate, and construction industry. "
+        "Analyze the following document to identify its type and extract key-value pairs. "
+        "The document can be one of the following types: utility bills, drawings, maintenance records, quality assurance reports, contracts, inspection reports, or other types of documents related to the building industry. "
+        "Based on the text extracted from the submitted file, identify the type of document and provide key-value pairs if applicable.\n\n"
+        "Document Text:\n"
+        f"{text}\n\n"
+        "Please provide your analysis in the following format:\n"
+        "1. Document Type: [Type of the document]\n"
+        "2. Key-Value Pairs (if any):\n"
+        "   - Key: Value\n"
+        "   - Key: Value\n"
+        "   - Key: Value\n"
+
+        
+    )
+    
+    inputs = tokenizer.encode(prompt, return_tensors="pt", max_length=2048, truncation=True)
+    outputs = model.generate(inputs, max_length=2048, num_return_sequences=1, no_repeat_ngram_size=2)
+    analysis = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return analysis
 
 #----------------------------------------------------------------------------------------------------------------
 # VARIABLES
@@ -103,7 +145,7 @@ def extract_text_from_image(image_file):
 # MAIN
 #----------------------------------------------------------------------------------------------------------------
 
-st.title('Lambeth Innovator Hackather')
+st.title('Building Intel Buddy')
 st.write('Welcome to the page, this is a unified platform we collective submit our building data for future measurement')
 
 lambeth_resi_map()
@@ -125,24 +167,27 @@ if submit:
         st.write('Extracting text from PDF...')
         col1, col2 = st.columns(2)
         text, images = extract_text_from_pdf(submit)
-        
-        col1.text_area('Extracted Text', text, height=300)
+
         for image in images:
-            col2.image(image)
+            col1.image(image)
+        
+        entities = analyze_document(text)
+        col1.text_area('Extracted Text', entities, height=1000)
+        
     elif file_type.startswith('image/'):
         st.write('Extracting text from Image...')
         text = extract_text_from_image(submit)
         col1, col2 = st.columns(2)
-        col1.text_area('Extracted Text', text, height=300)
-        col2.image(submit)
+        col1.image(submit)
+        # Extract and display entities
+        entities = analyze_document(text)
+        col2.text_area('Extracted Text', entities, height=1000)
+
+
     else:
         st.error('Unsupported file type. Please upload a PDF or image file.')
     
     
-
-
-
-
 
 
 

@@ -6,3 +6,5 @@ geopy
 pytesseract
 opencv-python-headless
 PyMuPDF
+pdf2image
+transformer
