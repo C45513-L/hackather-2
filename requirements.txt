@@ -8,3 +8,4 @@ opencv-python-headless
 PyMuPDF
 pdf2image
 transformer
+stpyvista==0.0.19
